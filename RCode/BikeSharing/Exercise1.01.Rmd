@@ -1,0 +1,82 @@
+---
+title: "Exercise1.01"
+author: "Pradeep"
+date: "12/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+## Read in the data
+This section will read in the data. And print a summary
+
+```{r}
+bikesharing <- read_csv("./Data/day.csv")
+head(bikesharing)
+```
+
+## Initial transformations for some of the data to make
+The following are the mapping according to the data dictionary.
+season_mapping = {1:"winter", 2:"spring", 3:"summer", 4:"fall"}
+yr_mapping = {0: "2011", 1:"2012"}
+mnth_mapping = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+weekday_mapping={0: 'Sunday', 1: 'Monday', 2: 'Tuesday',3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
+weather_mapping={1:"Clear",2:"Misty",3:"Light Snow/Rain",4:"Heavy Snow/Rain"}
+
+```{r}
+library(tidyverse)
+library(magrittr)
+
+bikesharing <- read_csv("./Data/day.csv")
+# yr_mapping = {0: "2011", 1:"2012"}
+# mnth_mapping = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+# weekday_mapping={0: 'Sunday', 1: 'Monday', 2: 'Tuesday',3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
+# weather_mapping={1:"Clear",2:"Misty",3:"Light Snow/Rain",4:"Heavy Snow/Rain"}
+
+bikesharing %<>% mutate(
+                        season=case_when(
+                          season==1 ~ "winter",
+                          season==2 ~ "spring",
+                          season==3 ~ "summer",
+                          season==4 ~ "fall",
+                          TRUE~"NA"  ), 
+                        yr = case_when(
+                          yr==0 ~"2011",
+                          yr==1 ~ "2012"
+                        ),
+                        mnth = case_when(
+                          mnth==1 ~"Jan",
+                          mnth==2 ~"Feb",
+                          mnth==3 ~"Mar",
+                          mnth==4 ~"Apr",
+                          mnth==5 ~"May",
+                          mnth==6 ~"Jun",
+                          mnth==7 ~"Jul",
+                          mnth==8 ~"Aug",
+                          mnth==9 ~"Sep",
+                          mnth==10 ~"Oct",
+                          mnth==11 ~"Nov",
+                          mnth==12 ~"Dec",
+                          ),
+                        weekday= case_when(
+                          weekday==0 ~ "Sunday",
+                          weekday==1 ~ "Monday",
+                          weekday==2 ~ "Tuesday",
+                          weekday==3 ~ "Wednesday",
+                          weekday==4 ~ "Thursday",
+                          weekday==5 ~ "Friday",
+                          weekday==6 ~ "Saturday"
+                        ),
+                        weathersit= case_when(
+                          weathersit==1 ~"Clear",
+                          weathersit==2 ~"Misty",
+                          weathersit==3 ~"Light Snow or Rain",
+                          weathersit==4 ~"Heavy Snow or Rain"
+                        )
+                        
+                          )
+bikesharing %>% slice_sample(n=200)
+```
+
