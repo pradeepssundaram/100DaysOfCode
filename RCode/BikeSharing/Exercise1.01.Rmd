@@ -80,3 +80,16 @@ bikesharing %<>% mutate(
 bikesharing %>% slice_sample(n=200)
 ```
 
+We will plot the distribution plot of the registered and casual riders all up
+
+```{r}
+bikeshare_plot<-bikesharing %>% pivot_longer(cols = c(registered,casual),names_to="RideType",values_to="NumRides") %>% select(RideType,NumRides)
+fig <- ggplot(data = bikeshare_plot) +
+  geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
+  theme_classic()
+fig
+  
+  
+fig
+```
+
