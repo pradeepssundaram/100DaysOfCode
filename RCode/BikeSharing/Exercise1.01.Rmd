@@ -8,14 +8,10 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(zoo)
 ```
 ## Read in the data
 This section will read in the data. And print a summary
-
-```{r}
-bikesharing <- read_csv("./Data/day.csv")
-head(bikesharing)
-```
 
 ## Initial transformations for some of the data to make
 The following are the mapping according to the data dictionary.
@@ -29,7 +25,7 @@ weather_mapping={1:"Clear",2:"Misty",3:"Light Snow/Rain",4:"Heavy Snow/Rain"}
 library(tidyverse)
 library(magrittr)
 
-bikesharing <- read_csv("./Data/day.csv")
+bikesharing <- read_csv("./Data/hour.csv")
 # yr_mapping = {0: "2011", 1:"2012"}
 # mnth_mapping = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
 # weekday_mapping={0: 'Sunday', 1: 'Monday', 2: 'Tuesday',3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
@@ -86,10 +82,63 @@ We will plot the distribution plot of the registered and casual riders all up
 bikeshare_plot<-bikesharing %>% pivot_longer(cols = c(registered,casual),names_to="RideType",values_to="NumRides") %>% select(RideType,NumRides)
 fig <- ggplot(data = bikeshare_plot) +
   geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
-  theme_classic()
+  scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
+  theme_classic() +
+  theme(
+    legend.position = c(.95, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(6, 6, 6, 6)
+    )
 fig
-  
-  
+ggsave("./figs/rides_distributions.png",plot = fig,device = "png")
+```
+Plot the time series. Evolution of Rides by time.
+
+```{r}
+
+plot_data<- bikesharing %>% select(dteday,registered,casual) %>% 
+  group_by(dteday) %>% summarise(registered=sum(registered),casual=sum(casual)) %>% 
+  pivot_longer(cols=c(registered,casual),names_to="RideType",values_to="NumberOfRides")
+
+fig<-ggplot(data = plot_data) + 
+  geom_line(mapping = aes(x=dteday,y=NumberOfRides,color=RideType))+
+  theme_classic()+
+  theme(
+    legend.position = c(1, 1),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(0, 0, 0, 0)
+  )
 fig
+ggsave("./figs/rides_daily.png",plot = fig,device = "png")
+
+```
+Smoothed Plotting of Time Series
+```{r}
+windowsize <- 7
+plot_data<- bikesharing %>% select(dteday,registered,casual) %>% 
+  group_by(dteday) %>% 
+  summarise(sumreg=sum(registered),sumcas=sum(casual)) %>% 
+  mutate(regrollm=rollmean(x=sumreg,k=windowsize,align="right",fill=NA),
+         casrollm=rollmean(x=sumcas,k=windowsize,align="right",fill=NA),
+         regrollsd=rollapplyr(data= plot_data$sumreg,width=windowsize,FUN="sd",fill=NA),
+         casrollsd=rollapplyr(data= plot_data$sumcas,width=windowsize,FUN="sd",fill=NA)
+           
+         ) %>% select(dteday,registered=regrollm,registeredsd=regrollsd,casual=casrollm,casualsd=casrollsd) %>% filter(!is.na(registered))
+plot_data
+
+# fig<-ggplot(data = plot_data) + 
+#   geom_line(mapping = aes(x=dteday,y=NumberOfRides,color=RideType))+
+#   theme_classic()+
+#   theme(
+#     legend.position = c(1, 1),
+#     legend.justification = c("right", "top"),
+#     legend.box.just = "right",
+#     legend.margin = margin(0, 0, 0, 0)
+#   )
+# fig
+# ggsave("./figs/rides_daily.png",plot = fig,device = "png")
+
 ```
 

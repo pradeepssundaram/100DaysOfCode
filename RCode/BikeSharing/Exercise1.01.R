@@ -51,8 +51,30 @@ bikesharing %<>% mutate(
                           )
 
 bikeshare_plot<-bikesharing %>% pivot_longer(cols = c(registered,casual),names_to="RideType",values_to="NumRides") %>% select(RideType,NumRides)
+
+fig1<-ggplot(data = bikesharing) +
+    geom_density(mapping = aes(x=registered))+
+  geom_density(mapping = aes(x=casual))
+fig1 +   scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})
+
 fig <- ggplot(data = bikeshare_plot) +
   geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
+  scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
+  theme_classic() +
+  theme(
+    legend.position = c(.95, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(6, 6, 6, 6)
+  )
+
+fig
+
+
+fig <- ggplot(data = bikeshare_plot) +
+  geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
+  scale_fill_manual( values = c("red","orange"))+
+  scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
   theme_classic()
 fig
 
@@ -86,3 +108,33 @@ fig
 # fig
 # 
 # #ggsave("./2019-12-24/Figures/ChristmasTrend.png",plot = myplot,dpi = "retina")
+
+
+
+# 
+# import matplotlib.pyplot as plt
+# import seaborn as sns, numpy as np
+# 
+# sns.set(rc={"figure.figsize": (8, 4)}); np.random.seed(0)
+# x = np.random.randn(100)
+# ax = sns.distplot(x)
+# plt.show()
+
+
+
+plot_data<- bikesharing %>% select(dteday,registered,casual) %>% 
+  group_by(dteday) %>% summarise(registered=sum(registered),casual=sum(casual)) %>% 
+  pivot_longer(cols=c(registered,casual),names_to="RideType",values_to="NumberOfRides")
+
+#plot_data %>% slice_sample(n = 100)
+
+fig<-ggplot(data = plot_data) + 
+  geom_line(mapping = aes(x=dteday,y=NumberOfRides,color=RideType))+
+  theme_classic()+
+  theme(
+    legend.position = c(1, 1),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(0, 0, 0, 0)
+  )
+fig
