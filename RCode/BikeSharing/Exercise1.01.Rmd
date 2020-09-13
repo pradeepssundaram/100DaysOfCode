@@ -122,11 +122,28 @@ plot_data<- bikesharing %>% select(dteday,registered,casual) %>%
   summarise(sumreg=sum(registered),sumcas=sum(casual)) %>% 
   mutate(regrollm=rollmean(x=sumreg,k=windowsize,align="right",fill=NA),
          casrollm=rollmean(x=sumcas,k=windowsize,align="right",fill=NA),
-         regrollsd=rollapplyr(data= plot_data$sumreg,width=windowsize,FUN="sd",fill=NA),
-         casrollsd=rollapplyr(data= plot_data$sumcas,width=windowsize,FUN="sd",fill=NA)
+         regrollsd=rollapplyr(data= sumreg,width=windowsize,FUN="sd",fill=NA),
+         casrollsd=rollapplyr(data= sumcas,width=windowsize,FUN="sd",fill=NA)
            
-         ) %>% select(dteday,registered=regrollm,registeredsd=regrollsd,casual=casrollm,casualsd=casrollsd) %>% filter(!is.na(registered))
-plot_data
+         ) %>% select(dteday,registered=regrollm,registeredsd=regrollsd,casual=casrollm,casualsd=casrollsd) %>% filter(!is.na(registered)) 
+plot_data_1<- plot_data %>% select(dteday,registered,casual) %>% 
+  pivot_longer(cols = c("registered","casual"),names_to="RideType",values_to="RollingMeanRides")
+plot_data_2<- plot_data %>% select(dteday,registeredsd,casualsd) %>% 
+  pivot_longer(cols = c("registeredsd","casualsd"),names_to="RideType",values_to="RollingsdRides")
+
+fig <- ggplot(data = plot_data_1) + geom_line(mapping = aes(x=dteday,y=RollingMeanRides,color=RideType)) +
+  geom_ribbon(data=plot_data_2,mapping = aes(x=dteday,ymin=plot_data_1$RollingMeanRides-2*RollingsdRides,ymax=plot_data_1$RollingMeanRides+2*RollingsdRides,fill=RideType),alpha=0.25,show.legend = FALSE) +
+  theme_classic()+
+  theme(
+    legend.position = c(1, 1),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(0, 0, 0, 0)
+  )
+fig
+ggsave("./figs/rolling_rides_daily.png",plot = fig,device = "png")
+
+ 
 
 # fig<-ggplot(data = plot_data) + 
 #   geom_line(mapping = aes(x=dteday,y=NumberOfRides,color=RideType))+
@@ -141,4 +158,4 @@ plot_data
 # ggsave("./figs/rides_daily.png",plot = fig,device = "png")
 
 ```
-
+# distribution of bike rides during a day and then during days of a week
