@@ -296,7 +296,36 @@ Looking at the p values and at .05 Confidence Level we can safely reject the NUL
 
 I will get back with differences of users between weekdays. Given this is count data how do we fit other methods to do the test.
 
-```{r}
+```{r message=FALSE,results='hide'}
+plot_data<-bikesharing %>%
+  pivot_longer(cols=c("registered","casual"),names_to="RideType",values_to="NumRides") %>% 
+  select(temp,atemp,hum,windspeed,RideType,NumRides)
+  
+  plotscatters<-function(colname,busname)
+  {
+    coltoplot<-ensym(colname)
+      fig<-ggplot(data = plot_data) +
+      geom_point(mapping = aes(x=!!coltoplot,y=NumRides,color=RideType),alpha=.25) +
+      geom_smooth(mapping = aes(x=!!coltoplot,y=NumRides,color=RideType),method = "lm",alpha=.25) +
+      ggtitle(paste("Plot of Rides to", busname)) +
+      theme_classic()+
+      theme(plot.title = element_text(hjust = 0.5))+
+      theme(legend.title = element_blank())+
+      ylab("Number of Rides") +
+      xlab(busname)
+      ggsave(paste("./figs/",busname,".png"),device = "png",plot = fig)
+      return(fig)
+    
+  }
+  
+  varlis<-c("temp","atemp","hum","windspeed")
+  buslis<-c("Percieved Temperature","Actual Temperature","Humidity","Wind Speed")
+  figlist<-map2(varlis,buslis,plotscatters)
+  for (figs in figlist) {
+    plot(figs)
+    
+  }
+  rm(plot_data)
 
 ```
 

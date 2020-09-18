@@ -190,7 +190,57 @@ ttestData %>%
   ttestData %>%  filter(is(IsWeekDay) %>% select(registered) ,ttestData %>% filter(!is(IsWeekDay) %>% select(registered) ))
 
   
-
-
-
-
+  
+  plot_data<-bikesharing %>%
+  pivot_longer(cols=c("registered","casual"),names_to="RideType",values_to="NumRides") %>% 
+  select(temp,atemp,hum,windspeed,RideType,NumRides)
+  
+  plotscatters<-function(colname,busname)
+  {
+    coltoplot<-ensym(colname)
+      fig<-ggplot(data = plot_data) +
+      geom_point(mapping = aes(x=!!coltoplot,y=NumRides,color=RideType),alpha=.25) +
+      geom_smooth(mapping = aes(x=!!coltoplot,y=NumRides,color=RideType),method = "lm",alpha=.25) +
+      ggtitle(paste("Plot of Rides to", busname)) +
+      theme_classic()+
+      theme(plot.title = element_text(hjust = 0.5))+
+      theme(legend.title = element_blank())+
+      ylab("Number of Rides") +
+      xlab(busname)
+      plot(fig)
+      ggsave(paste("./figs/",busname,".png"),device = "png",plot = fig)
+    
+  }
+  
+  
+  plotscatters(hum,"Humidity")
+  varlis<-c("temp","atemp","hum","windspeed")
+  buslis<-c("Percieved Temperature","Actual Temperature","Humidity","Wind Speed")
+  map2(varlis,buslis,plotscatters)
+  
+  
+  
+  
+  bikeshare_plot<-bikesharing %>% pivot_longer(cols = c(registered,casual),names_to="RideType",values_to="NumRides") %>% select(RideType,NumRides)
+  
+  ggplot(data = bikeshare_plot) +
+    geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
+    scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
+    ggtitle("Distribution of Riders",subtitle = "Casual Vs Registered") +
+    xlab("Number of Rides")+
+    ylab("Density")+
+  theme_classic() +
+    theme(
+      legend.position = c(.95, .95),
+      legend.justification = c("right", "top"),
+      legend.box.just = "right",
+      legend.margin = margin(6, 6, 6, 6)
+    ) +
+    theme(legend.title = element_blank()) +
+    theme(plot.title = element_text(hjust = .5)) +
+    theme(plot.subtitle = element_text(hjust = .5))
+  
+  
+  
+  
+  
