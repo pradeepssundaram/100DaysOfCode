@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(zoo)
+library(broom)
 ```
 ## Read in the data
 This section will read in the data. And print a summary
@@ -78,46 +79,57 @@ bikesharing %>% slice_sample(n=200)
 ## Exploratory Data Analysis and Visualizations
 We will plot the distribution plot of the registered and casual riders all up
 
-```{r}
+```{r, message=FALSE,results='hide'}
 bikeshare_plot<-bikesharing %>% pivot_longer(cols = c(registered,casual),names_to="RideType",values_to="NumRides") %>% select(RideType,NumRides)
 fig <- ggplot(data = bikeshare_plot) +
   geom_density(mapping = aes(x=NumRides,fill=RideType),alpha=0.25) +
   scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
+  ggtitle("Distribution of Riders",subtitle = "Casual Vs Registered") +
+  xlab("Number of Rides")+
+  ylab("Density")+
   theme_classic() +
   theme(
     legend.position = c(.95, .95),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
     legend.margin = margin(6, 6, 6, 6)
-    )
-fig
+    ) +
+  theme(legend.title = element_blank()) +
+  theme(plot.title = element_text(hjust = .5)) +
+  theme(plot.subtitle = element_text(hjust = .5))
+  
+plot(x = fig)
 ggsave("./figs/rides_distributions.png",plot = fig,device = "png")
 rm(bikeshare_plot)
 ```
 Plot the time series. Evolution of Rides by time.
 
-```{r}
-
+```{r, message=FALSE,results='hide'}
 plot_data<- bikesharing %>% select(dteday,registered,casual) %>% 
   group_by(dteday) %>% summarise(registered=sum(registered),casual=sum(casual)) %>% 
   pivot_longer(cols=c(registered,casual),names_to="RideType",values_to="NumberOfRides")
 
 fig<-ggplot(data = plot_data) + 
   geom_line(mapping = aes(x=dteday,y=NumberOfRides,color=RideType))+
+  ggtitle("Number of Riders by day")+
+  xlab("Date") +
+  ylab("Number of Riders") +
   theme_classic()+
   theme(
     legend.position = c(1, 1),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(0, 0, 0, 0)
-  )
+    legend.margin = margin(0, 0, 0, 0),
+    legend.title = element_blank()
+  ) +
+  theme(plot.title = element_text(hjust = 0.5))
 fig
 ggsave("./figs/rides_daily.png",plot = fig,device = "png")
 rm(plot_data)
 
 ```
-Smoothed Plotting of Time Series
-```{r}
+PLotting Time Series with Rolling means and standard deviations
+```{r, message=FALSE,results='hide'}
 windowsize <- 7
 plot_data<- bikesharing %>% select(dteday,registered,casual) %>% 
   group_by(dteday) %>% 
@@ -135,13 +147,20 @@ plot_data_2<- plot_data %>% select(dteday,registeredsd,casualsd) %>%
 
 fig <- ggplot(data = plot_data_1) + geom_line(mapping = aes(x=dteday,y=RollingMeanRides,color=RideType)) +
   geom_ribbon(data=plot_data_2,mapping = aes(x=dteday,ymin=plot_data_1$RollingMeanRides-2*RollingsdRides,ymax=plot_data_1$RollingMeanRides+2*RollingsdRides,fill=RideType),alpha=0.25,show.legend = FALSE) +
+  ggtitle("Number of Readers by Day",subtitle = "Smoothed by Rolling Average of 7 days")+
+  ylab("Number of Riders")+
+  xlab("Date") +
   theme_classic()+
   theme(
     legend.position = c(1, 1),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(0, 0, 0, 0)
-  )
+    legend.margin = margin(0, 0, 0, 0),
+    legend.title = element_blank()
+  )+
+theme(plot.title = element_text(hjust = 0.5)) +
+theme(plot.subtitle = element_text(hjust = 0.58))  
+  
 fig
 ggsave("./figs/rolling_rides_daily.png",plot = fig,device = "png")
 rm(list=c("plot_data_1","plot_data_2"))
@@ -149,20 +168,26 @@ rm(list=c("plot_data_1","plot_data_2"))
 ```
 # distribution of bike rides during a day and then during days of a week
 We will draw both the total and the average of riders by hour of the day by season.
-```{r}
+```{r message=FALSE,results='hide'}
 plot_data<-bikesharing %>% pivot_longer(cols =c(registered,casual),names_to="RideType",values_to="NumberOfRides") %>% 
   select(hr,season,RideType,NumberOfRides) %>% mutate(season=factor(season,levels=c("winter","spring","summer","fall")),RideType=factor(RideType,levels=c("registered","casual")), hr=factor(hr))
 
-ggplot(data = plot_data) + 
+fig<-ggplot(data = plot_data) + 
   geom_col(mapping = aes(x=hr,y=NumberOfRides),fill="lightblue")+ 
-  scale_x_discrete(name="hour", breaks=seq(0,23))+
+  scale_x_discrete(breaks=seq(0,23))+
   facet_grid(rows = vars(season),cols = vars(RideType),switch = "y") +
-  theme_classic()
+  ggtitle("Hourly Distribution of Rides by Season") +
+  xlab("Hour of the Day")+
+  ylab("Number of Rides")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+fig
+ggsave("./figs/totalregisteredVsCasualridersbyhourbyseason.png",plot = fig,device = "png")
 rm(plot_data)
 
 ```
 
-```{r}
+```{r message=FALSE,results='hide'}
 plot_data_average <- 
   bikesharing %>% group_by(hr,season) %>% summarise(registered=mean(registered),casual=mean(casual)) %>% 
   pivot_longer(cols =c(registered,casual),names_to="RideType",values_to="AverageRides") %>% 
@@ -171,32 +196,47 @@ plot_data_average <-
          ,RideType=factor(RideType,levels=c("registered","casual"))
          , hr=factor(hr))
 
-ggplot(data = plot_data_average) + 
+fig<-ggplot(data = plot_data_average) + 
   geom_col(mapping = aes(x=hr,y=AverageRides),fill="lightblue")+ 
-  scale_x_discrete(name="hour", breaks=seq(0,23))+
+  scale_x_discrete( breaks=seq(0,23))+
   facet_grid(rows = vars(season),cols = vars(RideType),switch = "y") +
+  ggtitle("Hourly distribution of Average Number of Rides by Season")+
+  ylab("Average Number of Rides")+
+    xlab("Hour of the Day") +
   theme_classic()
-
+  
+fig
+ggsave("./figs/AverageregisteredVsCasualridersbyhourbyseason.png",plot = fig,device = "png")
 rm(plot_data_average)
 ```
 We will check for distribution of rides by day of week by season
-```{r}
+```{r message=FALSE,results='hide'}
 
-plot_data<-bikesharing %>% pivot_longer(cols =c(registered,casual),names_to="RideType",values_to="NumberOfRides") %>% 
-  select(weekday,season,RideType,NumberOfRides) %>% mutate(season=factor(season,levels=c("winter","spring","summer","fall"))
-                                                   ,RideType=factor(RideType,levels=c("registered","casual"))
-                                                  ,weekday=factor(weekday,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
-                                                )
+plot_data<-bikesharing %>% 
+  pivot_longer(cols =c(registered,casual),names_to="RideType",values_to="NumberOfRides") %>% 
+  select(weekday,season,RideType,NumberOfRides) %>% 
+  mutate(
+        season=factor(season,levels=c("winter","spring","summer","fall"))
+        ,RideType=factor(RideType,levels=c("registered","casual"))
+        ,weekday=factor(weekday,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
+        )
   
-ggplot(data = plot_data) +
+fig<-ggplot(data = plot_data) +
   geom_col(mapping = aes(x=weekday,y=NumberOfRides),fill="lightblue") +
   facet_grid(rows = vars(season),cols = vars(RideType)) +
   scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
-  theme_classic()
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))+
+  ggtitle("Weekly Rides by Season")+
+  xlab("Day of the Week")+
+  ylab("Total Number of Rides")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+plot(x=fig)
+ggsave("./figs/NumRidesBySeason.png",device = "png",plot = fig)
 rm(plot_data)
 ```
 Now the plot of Average Number of Rides by Weekday and Season
-```{r}
+```{r message=FALSE,results='hide'}
 
 plot_data <- bikesharing %>% group_by(weekday,season) %>% 
              summarise(registered=mean(registered),casual=mean(casual)) %>% 
@@ -206,12 +246,17 @@ plot_data <- bikesharing %>% group_by(weekday,season) %>%
          ,weekday=factor(weekday,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
   )
             
-            
-ggplot(data = plot_data) +
+fig <- ggplot(data = plot_data) +
   geom_col(mapping = aes(x=weekday,y=AverageRides),fill="lightblue") +
   facet_grid(rows = vars(season),cols = vars(RideType)) +
   scale_y_continuous(labels=function(n){format(n, scientific = FALSE)})+
-  theme_classic()
+  ggtitle("Average Rides by Day of the Week and Season") +
+  xlab("Day of the Week") +
+  ylab("Average Number of Rides") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+plot(fig)
+ggsave("./figs/AverageRidesByDaysofWeekAndSeason.png",device = "png",plot = fig)
 rm(plot_data)
 ```
 ## hypothesis testing using T-Tests
@@ -224,6 +269,15 @@ We will be testing whether
 
 ### T-Test for cases 1 and 2 above in a single command.
 ```{r}
+ttestData<-bikesharing %>% 
+  select(weekday,registered,casual) %>% 
+  mutate(IsWeekDay=case_when(
+    weekday %in% c("Saturday","Sunday") ~ "No",
+    TRUE~"Yes"
+  )) %>% 
+  select(IsWeekDay,casual,registered) %>% 
+  pivot_longer(cols=c(registered,casual),names_to="RideType",values_to="NumRides")
+
 testResults<-ttestData %>% 
   group_by(RideType,IsWeekDay) %>% 
   nest() %>% 
@@ -236,7 +290,14 @@ testResults<-ttestData %>%
   select(RideType,statistic,p.value)
 
 testResults
-
+rm(ttestData,testResults)
 ```
 Looking at the p values and at .05 Confidence Level we can safely reject the NULL Hypothesis that means are identical. The alternative hypothesis is that the means are different . We can conclude that based on the data there is a difference between the number of users across categories between weekdays and weekends.
+
+I will get back with differences of users between weekdays. Given this is count data how do we fit other methods to do the test.
+
+```{r}
+
+```
+
 
